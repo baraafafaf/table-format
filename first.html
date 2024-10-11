@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materials Date</title>
+
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c2c2c;
+            color: #ffffff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffffff;
+        }
+
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            display: inline-block;
+            width: 150px;
+            margin-right: 10px;
+            color: #ffffff;
+        }
+
+        input, select {
+            margin: 5px 0;
+            padding: 10px;
+            width: 200px;
+            background-color: #444;
+            color: #ffffff;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+
+        .days-selection {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .day-button {
+            padding: 10px 20px;
+            background-color: #555;
+            color: #fff;
+            border: 1px solid #4CAF50;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .day-button:hover {
+            background-color: #666;
+        }
+
+        .day-button.selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 18px;
+            background-color: #444;
+            color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none; /* Hide the table initially */
+        }
+
+        th, td {
+            padding: 15px;
+            border: 1px solid #555;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: rgb(0, 0, 0);
+            font-size: 20px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #555;
+        }
+
+        tr:hover {
+            background-color: #666;
+        }
+
+        .flatpickr-input {
+            border-radius: 5px;
+            padding: 10px;
+            width: 200px;
+        }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            font-size: 14px;
+            color: #ffffff;
+            padding: 20px 0;
+            background-color: #333;
+            border-top: 1px solid #4CAF50;
+        }
+
+        footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+    </style>
+</head>
+<body>
+
+<h1>Materials Date</h1>
+
+<form id="courseForm">
+    <label for="courseName">Materials Name:</label>
+    <input type="text" id="courseName" required><br>
+
+    <label for="days">Days:</label>
+    <div class="days-selection" id="daysSelection">
+        <div class="day-button" data-day="Sun">Sun</div>
+        <div class="day-button" data-day="Mon">Mon</div>
+        <div class="day-button" data-day="Tue">Tue</div>
+        <div class="day-button" data-day="Wed">Wed</div>
+        <div class="day-button" data-day="Thu">Thu</div>
+        <div class="day-button" data-day="Fri">Fri</div>
+        <div class="day-button" data-day="Sat">Sat</div>
+    </div>
+
+    <label for="startTime">Start Time:</label>
+    <input type="text" id="startTime" class="timepicker" required><br>
+
+    <label for="endTime">End Time:</label>
+    <input type="text" id="endTime" class="timepicker" required><br>
+
+    <button type="button" onclick="addCourse()">Add Course</button>
+</form>
+
+<table id="courseTableContainer">
+    <thead>
+        <tr>
+            <th>Materials Name</th>
+            <th>Day</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+        </tr>
+    </thead>
+    <tbody id="courseTable">
+        <!-- Rows will be inserted here -->
+    </tbody>
+</table>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+    let courses = [];
+    let selectedDays = [];
+
+    document.querySelectorAll('.day-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const day = this.getAttribute('data-day');
+            if (this.classList.contains('selected')) {
+                this.classList.remove('selected');
+                selectedDays = selectedDays.filter(d => d !== day);
+            } else {
+                this.classList.add('selected');
+                selectedDays.push(day);
+            }
+        });
+    });
+
+    function getDayOrder(day) {
+        switch (day) {
+            case "Sun": return 1;
+            case "Mon": return 2;
+            case "Tue": return 3;
+            case "Wed": return 4;
+            case "Thu": return 5;
+            case "Fri": return 6;
+            case "Sat": return 7;
+            default: return 8;
+        }
+    }
+
+    function isTimeConflict(day, startTime, endTime) {
+        return courses.some(course => {
+            return course.day === day && 
+                ((startTime >= course.startTime && startTime < course.endTime) || 
+                 (endTime > course.startTime && endTime <= course.endTime) ||
+                 (startTime <= course.startTime && endTime >= course.endTime));
+        });
+    }
+
+    function addCourse() {
+        const name = document.getElementById('courseName').value;
+        const startTime = document.getElementById('startTime').value;
+        const endTime = document.getElementById('endTime').value;
+
+        let conflict = false;
+
+        selectedDays.forEach(day => {
+            if (isTimeConflict(day, startTime, endTime)) {
+                conflict = true;
+                alert(`Time conflict detected for ${name} on ${day}. Please choose a different time.`);
+            } else {
+                courses.push({ name, day, startTime, endTime });
+            }
+        });
+
+        if (!conflict) {
+            // Sort courses by day and time if there's no conflict
+            courses.sort((c1, c2) => {
+                const dayOrder1 = getDayOrder(c1.day);
+                const dayOrder2 = getDayOrder(c2.day);
+
+                if (dayOrder1 !== dayOrder2) {
+                    return dayOrder1 - dayOrder2;
+                } else if (c1.startTime !== c2.startTime) {
+                    return c1.startTime.localeCompare(c2.startTime);
+                } else {
+                    return c1.endTime.localeCompare(c2.endTime);
+                }
+            });
+
+            displayCourses();
+            document.getElementById("courseTableContainer").style.display = "table"; // Show the table
+        }
+    }
+
+    function displayCourses() {
+        const courseTable = document.getElementById('courseTable');
+        courseTable.innerHTML = '';
+
+        courses.forEach(course => {
+            const row = `<tr>
+                <td>${course.name}</td>
+                <td>${course.day}</td>
+                <td>${course.startTime}</td>
+                <td>${course.endTime}</td>
+            </tr>`;
+            courseTable.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    flatpickr(".timepicker", {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i",
+        time_24hr: true
+    });
+</script>
+
+<footer>
+  
+    <b> For khodory students ♥!. </b>
+    <br>
+    
+   <br> 
+   حقوق © 2024 BaraaHweiti - instagram profile: <a href="https://www.instagram.com/baraa_hweiti/profilecard/?igsh=a3d3aXVub2d2bHAz">Join</a>
+</footer>
+
+</body>
+</html>
